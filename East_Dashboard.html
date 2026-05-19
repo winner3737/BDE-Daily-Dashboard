@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>East Zone — BDE Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#f0f2f8;--white:#fff;--card:#fff;--border:#e2e8f0;
+  --text:#0f172a;--muted:#64748b;--muted2:#94a3b8;
+  --accent:#4f46e5;--accent-l:#eef2ff;
+  --green:#059669;--green-l:#ecfdf5;
+  --red:#dc2626;--red-l:#fef2f2;
+  --amber:#d97706;--amber-l:#fffbeb;
+  --blue:#0284c7;--blue-l:#e0f2fe;
+  --purple:#7c3aed;--purple-l:#f5f3ff;
+  --teal:#0d9488;--teal-l:#f0fdfa;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --sh2:0 4px 12px rgba(0,0,0,.08);
+}
+body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",sans-serif;min-height:100vh;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:52px;box-shadow:var(--sh);position:sticky;top:0;z-index:100;}
+.tb-brand{display:flex;align-items:center;gap:.6rem;}
+.tb-icon{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;}
+.tb-name{font-size:.88rem;font-weight:800;}
+.tb-sub{font-size:.6rem;color:var(--accent);background:var(--accent-l);padding:2px 7px;border-radius:20px;font-weight:700;margin-left:.3rem;}
+.tb-chips{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;}
+.tbc{font-size:.67rem;padding:.2rem .6rem;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-weight:500;white-space:nowrap;}
+.tbc strong{font-weight:800;}
+.tabnav{background:var(--white);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;gap:0;}
+.tabnav-btn{padding:0 1.2rem;height:40px;display:flex;align-items:center;gap:.4rem;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;}
+.tabnav-btn:hover{color:var(--text);}
+.tabnav-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.fbar{background:var(--white);border-bottom:1px solid var(--border);padding:.5rem 1.5rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
+.fl{font-size:.58rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+.pills{display:flex;gap:.22rem;flex-wrap:wrap;}
+.pill{padding:.22rem .65rem;border-radius:20px;font-size:.66rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--muted);transition:all .15s;white-space:nowrap;}
+.pill:hover{border-color:var(--accent);color:var(--accent);}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.fsep{width:1px;height:16px;background:var(--border);flex-shrink:0;}
+.fsel{border:1.5px solid var(--border);border-radius:7px;padding:.22rem .58rem;font-size:.66rem;font-family:inherit;background:var(--white);color:var(--text);cursor:pointer;outline:none;}
+.fsel:focus{border-color:var(--accent);}
+.date-inp{border:1.5px solid var(--border);border-radius:7px;padding:.22rem .58rem;font-size:.66rem;font-family:"JetBrains Mono",monospace;background:var(--white);color:var(--text);cursor:pointer;outline:none;}
+.date-inp:focus{border-color:var(--accent);}
+.fsearch{border:1.5px solid var(--border);border-radius:7px;padding:.22rem .68rem;font-size:.66rem;font-family:inherit;background:var(--white);color:var(--text);outline:none;min-width:155px;}
+.fsearch:focus{border-color:var(--accent);}
+.fcount{font-size:.62rem;color:var(--muted);margin-left:auto;font-family:"JetBrains Mono",monospace;white-space:nowrap;}
+.page{padding:1rem 1.5rem 3rem;display:none;flex-direction:column;gap:.85rem;}
+.page.active{display:flex;}
+.sec{display:flex;align-items:center;gap:.5rem;}
+.sec-title{font-size:.59rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;}
+.sec-line{flex:1;height:1px;background:var(--border);}
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.72rem .82rem;box-shadow:var(--sh);position:relative;overflow:hidden;transition:all .2s;}
+.kpi:hover{box-shadow:var(--sh2);transform:translateY(-1px);}
+.kpi-bar{position:absolute;top:0;left:0;right:0;height:2.5px;border-radius:10px 10px 0 0;}
+.kpi-lbl{font-size:.51rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.22rem;}
+.kpi-val{font-size:1.15rem;font-weight:800;line-height:1;font-family:"JetBrains Mono",monospace;}
+.kpi-sub{font-size:.53rem;color:var(--muted);margin-top:.18rem;}
+.kpi-pbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:.35rem;}
+.kpi-pbar-fill{height:100%;border-radius:2px;}
+.bucket-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;}
+.bucket-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.72rem .82rem;box-shadow:var(--sh);text-align:center;position:relative;overflow:hidden;}
+.bc-top{position:absolute;top:0;left:0;right:0;height:2.5px;border-radius:10px 10px 0 0;}
+.bc-lbl{font-size:.51rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem;}
+.bc-val{font-size:1.1rem;font-weight:800;font-family:"JetBrains Mono",monospace;line-height:1;}
+.bc-pct{font-size:.58rem;color:var(--muted);margin-top:.15rem;}
+.bc-tag{display:inline-block;padding:1px 6px;border-radius:20px;font-size:.5rem;font-weight:700;text-transform:uppercase;margin-top:.3rem;}
+.tag-inv{background:var(--red-l);color:var(--red);}
+.tag-weak{background:var(--amber-l);color:var(--amber);}
+.tag-valid{background:var(--green-l);color:var(--green);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.85rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.82rem .92rem;box-shadow:var(--sh);}
+.card-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:.72rem;}
+.card-title{font-size:.57rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.card-tag{font-size:.54rem;font-weight:700;padding:2px 7px;border-radius:20px;}
+.ch{position:relative;}
+.bde-rows{display:flex;flex-direction:column;gap:.4rem;}
+.bde-row{background:var(--card);border:1px solid var(--border);border-left-width:3px;border-radius:8px;padding:.6rem .8rem;box-shadow:var(--sh);}
+.bde-row-top{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;}
+.bde-av{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.65rem;flex-shrink:0;}
+.bde-name{font-size:.76rem;font-weight:700;flex:1;}
+.bde-id{font-family:"JetBrains Mono",monospace;font-size:.53rem;color:var(--muted2);}
+.att-chip{font-size:.53rem;font-weight:700;padding:2px 7px;border-radius:20px;}
+.att-p{background:var(--green-l);color:var(--green);}
+.att-a{background:var(--red-l);color:var(--red);}
+.bde-meta{display:flex;gap:.5rem;font-size:.57rem;color:var(--muted);flex-wrap:wrap;margin-bottom:.4rem;}
+.bde-meta span strong{font-weight:700;color:var(--text);font-family:"JetBrains Mono",monospace;}
+.bde-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:.22rem;margin-bottom:.35rem;}
+.bk{background:var(--bg);border-radius:5px;padding:.28rem .32rem;text-align:center;}
+.bk-l{font-size:.46rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.06rem;}
+.bk-v{font-size:.7rem;font-weight:700;font-family:"JetBrains Mono",monospace;}
+.pbar-w{display:flex;align-items:center;gap:.28rem;}
+.pbar-bg{height:3px;background:var(--border);border-radius:2px;flex-shrink:0;}
+.pbar-fg{height:100%;border-radius:2px;}
+.rank-list{display:flex;flex-direction:column;gap:.3rem;}
+.rank-item{display:flex;align-items:center;gap:.48rem;padding:.36rem .48rem;border-radius:7px;background:var(--bg);transition:background .15s;}
+.rank-item:hover{background:#e8ecf8;}
+.rank-no{font-family:"JetBrains Mono",monospace;font-size:.57rem;color:var(--muted);width:15px;text-align:center;flex-shrink:0;}
+.rank-name{font-size:.64rem;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rank-tag{font-size:.52rem;color:var(--muted);flex-shrink:0;width:36px;text-align:right;}
+.rank-bar-bg{width:48px;height:3px;background:var(--border);border-radius:2px;flex-shrink:0;}
+.rank-bar-fill{height:100%;border-radius:2px;}
+.rank-val{font-family:"JetBrains Mono",monospace;font-size:.63rem;font-weight:600;width:52px;text-align:right;flex-shrink:0;}
+.l3m-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
+.l3m-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.72rem .82rem;box-shadow:var(--sh);position:relative;overflow:hidden;}
+.l3m-top{position:absolute;top:0;left:0;right:0;height:2.5px;border-radius:10px 10px 0 0;}
+.l3m-lbl{font-size:.51rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.22rem;}
+.l3m-val{font-size:1.05rem;font-weight:800;font-family:"JetBrains Mono",monospace;line-height:1;}
+.l3m-sub{font-size:.53rem;color:var(--muted);margin-top:.15rem;}
+.l3m-compare{display:flex;align-items:center;gap:.5rem;margin-top:.4rem;padding-top:.4rem;border-top:1px solid var(--border);}
+.l3m-c-lbl{font-size:.5rem;color:var(--muted);text-transform:uppercase;flex:1;}
+.l3m-c-val{font-size:.65rem;font-weight:700;font-family:"JetBrains Mono",monospace;}
+.sc-controls{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem;}
+.sc-info-ct{font-size:.62rem;color:var(--muted);margin-left:auto;}
+.sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.55rem;}
+.sc-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.78rem .88rem;box-shadow:var(--sh);transition:all .2s;}
+.sc-card:hover{box-shadow:var(--sh2);transform:translateY(-1px);}
+.sc-top{display:flex;align-items:center;gap:.55rem;margin-bottom:.65rem;}
+.sc-av{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.7rem;flex-shrink:0;}
+.sc-info{flex:1;min-width:0;}
+.sc-name{font-weight:700;font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sc-meta{font-size:.57rem;color:var(--muted);margin-top:.05rem;}
+.sc-empid{font-family:"JetBrains Mono",monospace;font-size:.54rem;color:var(--muted2);margin-top:.03rem;}
+.perf-chip{font-size:.54rem;font-weight:700;padding:1px 6px;border-radius:20px;}
+.perf-top{background:var(--green-l);color:var(--green);}
+.perf-mid{background:var(--blue-l);color:var(--blue);}
+.perf-low{background:var(--red-l);color:var(--red);}
+.sc-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:.28rem;margin-bottom:.55rem;}
+.sc-k{background:var(--bg);border-radius:5px;padding:.3rem .33rem;text-align:center;}
+.sc-kl{font-size:.48rem;color:var(--muted);text-transform:uppercase;margin-bottom:.08rem;font-weight:700;}
+.sc-kv{font-size:.75rem;font-weight:700;font-family:"JetBrains Mono",monospace;}
+.sc-bars{display:flex;flex-direction:column;gap:.2rem;}
+.sc-brl{display:flex;justify-content:space-between;font-size:.52rem;color:var(--muted);margin-bottom:.1rem;}
+.sc-bg{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.sc-bf{height:100%;border-radius:2px;}
+.tbl-card{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--sh);overflow:hidden;}
+.tbl-hd{padding:.65rem .9rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.tbl-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.67rem;}
+th{padding:.45rem .75rem;text-align:left;font-size:.55rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;}
+th:hover{color:var(--accent);}
+td{padding:.48rem .75rem;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f8faff;}
+.mono{font-family:"JetBrains Mono",monospace;font-size:.64rem;}
+.pag{display:flex;align-items:center;justify-content:space-between;padding:.52rem .82rem;border-top:1px solid var(--border);background:var(--bg);}
+.pag-info{font-size:.62rem;color:var(--muted);}
+.pag-btns{display:flex;gap:.18rem;flex-wrap:wrap;}
+.pb{background:var(--white);border:1px solid var(--border);color:var(--muted);padding:.2rem .46rem;border-radius:5px;font-size:.63rem;cursor:pointer;font-family:"JetBrains Mono",monospace;min-width:24px;text-align:center;transition:all .15s;}
+.pb:hover{border-color:var(--accent);color:var(--accent);}
+.pb.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.pb:disabled{opacity:.3;cursor:not-allowed;}
+@media(max-width:1100px){.g2,.g3{grid-template-columns:1fr;}.bucket-strip{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:600px){.kpi-strip{grid-template-columns:repeat(2,1fr);}.page{padding:.75rem;}.bucket-strip{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="tb-brand">
+    <div class="tb-icon">📊</div>
+    <div class="tb-name">East Zone — BDE Dashboard</div>
+    <span class="tb-sub">May 2026 · randhir.kumar</span>
+  </div>
+  <div class="tb-chips" id="tbChips"></div>
+</div>
+<div class="tabnav">
+  <button class="tabnav-btn active" id="tab-daily" onclick="switchTab('daily')">📅 Daily View</button>
+  <button class="tabnav-btn" id="tab-mtd" onclick="switchTab('mtd')">📈 MTD Summary</button>
+</div>
+<div class="fbar" id="fbar-daily">
+  <span class="fl">Date</span>
+  <div class="pills" id="datePills">
+    <span class="pill active" onclick="setQuick('yesterday',this)">Yesterday</span>
+    <span class="pill" onclick="setQuick('week',this)">Prev Week</span>
+    <span class="pill" onclick="setQuick('all',this)">All</span>
+  </div>
+  <div class="fsep"></div>
+  <input type="date" class="date-inp" id="dFrom" onchange="customRange()">
+  <span style="font-size:.7rem;color:var(--muted);padding:0 .2rem;">→</span>
+  <input type="date" class="date-inp" id="dTo" onchange="customRange()">
+  <div class="fsep"></div>
+  <span class="fl">BDE</span>
+  <select class="fsel" id="bdeSel" onchange="applyFilters()"><option value="">All BDEs</option></select>
+  <span class="fcount" id="dailyCount"></span>
+</div>
+<div class="fbar" id="fbar-mtd" style="display:none;">
+  <span class="fl">BDE</span>
+  <select class="fsel" id="bdeSelMTD" onchange="renderMTD()"><option value="">All BDEs</option></select>
+  <span class="fcount" id="mtdCount"></span>
+</div>
+
+<!-- DAILY PAGE -->
+<div class="page active" id="pg-daily">
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">Attendance & Field Overview</span><div class="sec-line"></div></div><div class="kpi-strip" id="kpi-att"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">Visit Timing Bifurcation</span><div class="sec-line"></div></div><div class="bucket-strip" id="bucket-row"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">Visit Performance</span><div class="sec-line"></div></div><div class="kpi-strip" id="kpi-visit"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">Productive Visit & Order</span><div class="sec-line"></div></div><div class="kpi-strip" id="kpi-prod"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">BDE-wise Daily Summary</span><div class="sec-line"></div></div><div class="bde-rows" id="bde-rows"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">Full Daily Table</span><div class="sec-line"></div></div>
+  <div class="tbl-card">
+    <div class="tbl-hd"><span class="card-title" style="margin:0;">All Daily Records</span><span class="mono" id="dailyTblCount"></span></div>
+    <div class="tbl-scroll"><table><thead><tr>
+      <th onclick="dSort('name')">BDE Name ↕</th><th>EMP ID</th><th onclick="dSort('date')">Date ↕</th>
+      <th>Start</th><th>End</th><th>Time</th><th onclick="dSort('att')">Attend ↕</th>
+      <th>0Min</th><th>1-5Min</th><th>6-15Min</th><th>16-30Min</th><th>30+Min</th>
+      <th onclick="dSort('vp')">V.Plan ↕</th><th onclick="dSort('va')">V.Ach ↕</th><th onclick="dSort('vach')">V.Ach% ↕</th>
+      <th onclick="dSort('pp')">P.Plan ↕</th><th onclick="dSort('pv')">Prod ↕</th><th onclick="dSort('pach')">Prod% ↕</th>
+      <th onclick="dSort('clp')">CLP ↕</th><th onclick="dSort('aov')">AOV ↕</th>
+    </tr></thead><tbody id="daily-tbody"></tbody></table></div>
+    <div class="pag"><span class="pag-info" id="dPagInfo"></span><div class="pag-btns" id="dPagBtns"></div></div>
+  </div></div>
+</div>
+
+<!-- MTD PAGE -->
+<div class="page" id="pg-mtd">
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">MTD Attendance & Working Days</span><div class="sec-line"></div></div><div class="kpi-strip" id="mtd-kpi-att"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">Visit Timing Bifurcation — MTD</span><div class="sec-line"></div></div><div class="bucket-strip" id="mtd-bucket-row"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">MTD Visit Performance</span><div class="sec-line"></div></div><div class="kpi-strip" id="mtd-kpi-visit"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">MTD Productive Visit</span><div class="sec-line"></div></div><div class="kpi-strip" id="mtd-kpi-prod"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">MTD CLP & Order</span><div class="sec-line"></div></div><div class="kpi-strip" id="mtd-kpi-clp"></div></div>
+  <div><div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">L3M Average Benchmarks</span><div class="sec-line"></div></div><div class="l3m-grid" id="l3m-grid"></div></div>
+  <div class="g2">
+    <div class="card"><div class="card-hd"><span class="card-title">Visit — Planned vs Achieved</span><span class="card-tag" style="background:var(--blue-l);color:var(--blue);">MTD</span></div><div class="ch" style="height:200px;"><canvas id="ch-visit"></canvas></div></div>
+    <div class="card"><div class="card-hd"><span class="card-title">Prod Visit — Planned vs Achieved</span><span class="card-tag" style="background:var(--green-l);color:var(--green);">MTD</span></div><div class="ch" style="height:200px;"><canvas id="ch-prod"></canvas></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-hd"><span class="card-title">CLP Target vs Achieved</span><span class="card-tag" style="background:var(--accent-l);color:var(--accent);">Revenue</span></div><div class="ch" style="height:200px;"><canvas id="ch-clp"></canvas></div></div>
+    <div class="card"><div class="card-hd"><span class="card-title">Attendance % per BDE</span><span class="card-tag" style="background:var(--amber-l);color:var(--amber);">Attendance</span></div><div class="ch" style="height:200px;"><canvas id="ch-att"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-hd"><span class="card-title">Visit Timing Breakdown per BDE (Stacked)</span><span class="card-tag" style="background:var(--purple-l);color:var(--purple);">Timing</span></div><div class="ch" style="height:240px;"><canvas id="ch-timing"></canvas></div></div>
+  <div class="g2">
+    <div class="card"><div class="card-hd"><span class="card-title">Top Performers — CLP</span><span class="card-tag" style="background:var(--green-l);color:var(--green);">🏆</span></div><div class="rank-list" id="lb-top" style="max-height:200px;overflow-y:auto;"></div></div>
+    <div class="card"><div class="card-hd"><span class="card-title">Bottom Performers — CLP</span><span class="card-tag" style="background:var(--red-l);color:var(--red);">🚨</span></div><div class="rank-list" id="lb-bot" style="max-height:200px;overflow-y:auto;"></div></div>
+  </div>
+  <div>
+    <div class="sec" style="margin-bottom:.55rem;"><span class="sec-title">BDE Scorecards</span><div class="sec-line"></div></div>
+    <div class="sc-controls">
+      <div class="pills" id="scPills">
+        <span class="pill active" onclick="setSC('all',this)">All</span>
+        <span class="pill" onclick="setSC('top',this)">🏆 Top</span>
+        <span class="pill" onclick="setSC('mid',this)">📈 Mid</span>
+        <span class="pill" onclick="setSC('low',this)">🚨 Low</span>
+        <span class="pill" onclick="setSC('top5',this)">Top 5 CLP</span>
+        <span class="pill" onclick="setSC('bot5',this)">Bottom 5 CLP</span>
+        <span class="pill" onclick="setSC('highAtt',this)">High Attend</span>
+        <span class="pill" onclick="setSC('lowAtt',this)">Low Attend</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;margin-top:.5rem;">
+        <input class="fsearch" id="scSearch" type="text" placeholder="🔍 Search scorecard..." oninput="renderMTD()"/>
+        <span class="sc-info-ct" id="scInfo"></span>
+      </div>
+    </div>
+    <div class="sc-grid" id="sc-grid"></div>
+  </div>
+</div>
+
+<script>
+const DAILY=[{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"01/05/2026","st":"12:39","et":"","tmin":0,"att":1,"m0":0.0,"m15":4.0,"m615":1.0,"m1630":2.0,"m30p":0.0,"vp":12.0,"va":7.0,"vach":58.3,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"01/05/2026","st":"10:46","et":"","tmin":0,"att":1,"m0":0.0,"m15":1.0,"m615":6.0,"m1630":2.0,"m30p":2.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"01/05/2026","st":"11:46","et":"11:47","tmin":1,"att":1,"m0":0.0,"m15":6.0,"m615":1.0,"m1630":1.0,"m30p":2.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":1.0,"pach":33.3,"clp":229.67409948542021,"aov":229.67409948542021},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"01/05/2026","st":"12:21","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"01/05/2026","st":"10:43","et":"","tmin":0,"att":1,"m0":0.0,"m15":1.0,"m615":2.0,"m1630":1.0,"m30p":0.0,"vp":12.0,"va":4.0,"vach":33.3,"pp":3.0,"pv":3.0,"pach":100.0,"clp":29928.704974271015,"aov":9976.234991423671},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"01/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"01/05/2026","st":"15:00","et":"","tmin":0,"att":1,"m0":0.0,"m15":8.0,"m615":2.0,"m1630":0.0,"m30p":1.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":3653.6706689536873,"aov":3653.6706689536873},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"02/05/2026","st":"11:56","et":"23:19","tmin":683,"att":1,"m0":0.0,"m15":1.0,"m615":1.0,"m1630":0.0,"m30p":0.0,"vp":12.0,"va":2.0,"vach":16.7,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"02/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"02/05/2026","st":"11:26","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"02/05/2026","st":"12:30","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"02/05/2026","st":"10:14","et":"","tmin":0,"att":1,"m0":0.0,"m15":0.0,"m615":2.0,"m1630":2.0,"m30p":0.0,"vp":12.0,"va":4.0,"vach":33.3,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"02/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"02/05/2026","st":"12:49","et":"","tmin":0,"att":1,"m0":0.0,"m15":5.0,"m615":3.0,"m1630":0.0,"m30p":2.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"03/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"03/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"03/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"03/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"03/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"03/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"03/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"04/05/2026","st":"11:25","et":"","tmin":0,"att":1,"m0":0.0,"m15":1.0,"m615":2.0,"m1630":1.0,"m30p":1.0,"vp":12.0,"va":5.0,"vach":41.7,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"04/05/2026","st":"11:11","et":"23:38","tmin":747,"att":1,"m0":0.0,"m15":1.0,"m615":1.0,"m1630":6.0,"m30p":2.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"04/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"04/05/2026","st":"11:49","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"04/05/2026","st":"10:13","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"04/05/2026","st":"11:09","et":"22:28","tmin":679,"att":1,"m0":0.0,"m15":5.0,"m615":1.0,"m1630":1.0,"m30p":2.0,"vp":12.0,"va":9.0,"vach":75.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1159.26243567753,"aov":1159.26243567753},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"04/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"05/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"05/05/2026","st":"11:58","et":"21:18","tmin":560,"att":1,"m0":0.0,"m15":1.0,"m615":7.0,"m1630":3.0,"m30p":0.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":617.78730703259,"aov":617.78730703259},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"05/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"05/05/2026","st":"12:54","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"05/05/2026","st":"10:33","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"05/05/2026","st":"11:14","et":"","tmin":0,"att":1,"m0":1.0,"m15":4.0,"m615":3.0,"m1630":3.0,"m30p":0.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1500.8576329331045,"aov":1500.8576329331045},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"05/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"06/05/2026","st":"12:06","et":"","tmin":0,"att":1,"m0":0.0,"m15":5.0,"m615":0.0,"m1630":0.0,"m30p":3.0,"vp":12.0,"va":8.0,"vach":66.7,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"06/05/2026","st":"11:14","et":"","tmin":0,"att":1,"m0":0.0,"m15":0.0,"m615":2.0,"m1630":7.0,"m30p":2.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":751.4579759862778,"aov":751.4579759862778},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"06/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"06/05/2026","st":"14:43","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"06/05/2026","st":"10:40","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"06/05/2026","st":"12:40","et":"","tmin":0,"att":1,"m0":1.0,"m15":10.0,"m615":0.0,"m1630":0.0,"m30p":1.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":4395.728987993138,"aov":4395.728987993138},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"06/05/2026","st":"08:03","et":"","tmin":0,"att":1,"m0":0.0,"m15":6.0,"m615":1.0,"m1630":1.0,"m30p":4.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":2.0,"pach":66.7,"clp":5231.826758147512,"aov":2615.913379073756},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"07/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"07/05/2026","st":"10:46","et":"23:10","tmin":744,"att":1,"m0":0.0,"m15":1.0,"m615":5.0,"m1630":4.0,"m30p":1.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":617.78730703259,"aov":617.78730703259},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"07/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"07/05/2026","st":"12:35","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"07/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"07/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"07/05/2026","st":"14:46","et":"","tmin":0,"att":1,"m0":0.0,"m15":10.0,"m615":0.0,"m1630":0.0,"m30p":2.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":2.0,"pach":66.7,"clp":67554.29674099483,"aov":33777.148370497416},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"08/05/2026","st":"11:04","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"08/05/2026","st":"11:45","et":"22:46","tmin":661,"att":1,"m0":0.0,"m15":1.0,"m615":5.0,"m1630":4.0,"m30p":1.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":617.78730703259,"aov":617.78730703259},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"08/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"08/05/2026","st":"10:50","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"08/05/2026","st":"10:27","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"08/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"08/05/2026","st":"13:10","et":"","tmin":0,"att":1,"m0":0.0,"m15":9.0,"m615":0.0,"m1630":1.0,"m30p":2.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":2585.1629502572896,"aov":2585.1629502572896},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"09/05/2026","st":"11:26","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"09/05/2026","st":"11:47","et":"","tmin":0,"att":1,"m0":0.0,"m15":2.0,"m615":4.0,"m1630":6.0,"m30p":1.0,"vp":12.0,"va":13.0,"vach":1.1,"pp":3.0,"pv":1.0,"pach":33.3,"clp":751.4579759862778,"aov":751.4579759862778},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"09/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"09/05/2026","st":"11:41","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"09/05/2026","st":"10:42","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"09/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"09/05/2026","st":"12:31","et":"","tmin":0,"att":1,"m0":0.0,"m15":5.0,"m615":1.0,"m1630":1.0,"m30p":3.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"10/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"10/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"10/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"10/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"10/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"10/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"10/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"11/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"11/05/2026","st":"10:33","et":"22:48","tmin":735,"att":1,"m0":0.0,"m15":0.0,"m615":1.0,"m1630":3.0,"m30p":0.0,"vp":12.0,"va":4.0,"vach":33.3,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"11/05/2026","st":"14:30","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":308.893653516295,"aov":308.893653516295},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"11/05/2026","st":"10:40","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"11/05/2026","st":"10:49","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"11/05/2026","st":"16:14","et":"","tmin":0,"att":1,"m0":1.0,"m15":9.0,"m615":1.0,"m1630":0.0,"m30p":1.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"11/05/2026","st":"11:58","et":"","tmin":0,"att":1,"m0":0.0,"m15":5.0,"m615":2.0,"m1630":3.0,"m30p":2.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":2887.667238421955,"aov":2887.667238421955},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"12/05/2026","st":"14:16","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"12/05/2026","st":"11:04","et":"","tmin":0,"att":1,"m0":0.0,"m15":1.0,"m615":5.0,"m1630":4.0,"m30p":0.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1163.9279588336192,"aov":1163.9279588336192},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"12/05/2026","st":"11:25","et":"","tmin":0,"att":1,"m0":1.0,"m15":5.0,"m615":2.0,"m1630":1.0,"m30p":1.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":1.0,"pach":33.3,"clp":2120.703259005146,"aov":2120.703259005146},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"12/05/2026","st":"13:22","et":"13:19","tmin":1437,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"12/05/2026","st":"11:01","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"12/05/2026","st":"11:50","et":"","tmin":0,"att":1,"m0":1.0,"m15":5.0,"m615":1.0,"m1630":1.0,"m30p":1.0,"vp":12.0,"va":9.0,"vach":75.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"12/05/2026","st":"10:42","et":"","tmin":0,"att":1,"m0":0.0,"m15":5.0,"m615":1.0,"m1630":3.0,"m30p":2.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":2.0,"pach":66.7,"clp":7367.204116638077,"aov":3683.6020583190384},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"13/05/2026","st":"12:29","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"13/05/2026","st":"11:37","et":"","tmin":0,"att":1,"m0":0.0,"m15":2.0,"m615":4.0,"m1630":5.0,"m30p":1.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1163.9279588336192,"aov":1163.9279588336192},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"13/05/2026","st":"11:28","et":"11:28","tmin":0,"att":1,"m0":2.0,"m15":7.0,"m615":1.0,"m1630":1.0,"m30p":1.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":281.8010291595197,"aov":281.8010291595197},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"13/05/2026","st":"13:14","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"13/05/2026","st":"10:28","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":2.0,"pach":66.7,"clp":9941.475128644937,"aov":4970.737564322469},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"13/05/2026","st":"11:19","et":"","tmin":0,"att":1,"m0":2.0,"m15":4.0,"m615":2.0,"m1630":1.0,"m30p":3.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"13/05/2026","st":"12:57","et":"","tmin":0,"att":1,"m0":0.0,"m15":5.0,"m615":1.0,"m1630":2.0,"m30p":2.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":1.0,"pach":33.3,"clp":2254.373927958833,"aov":2254.373927958833},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"14/05/2026","st":"12:02","et":"22:41","tmin":639,"att":1,"m0":0.0,"m15":1.0,"m615":3.0,"m1630":0.0,"m30p":1.0,"vp":12.0,"va":5.0,"vach":41.7,"pp":3.0,"pv":2.0,"pach":66.7,"clp":28046.84391080617,"aov":14023.421955403084},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"14/05/2026","st":"11:00","et":"","tmin":0,"att":1,"m0":0.0,"m15":0.0,"m615":6.0,"m1630":1.0,"m30p":3.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1163.9279588336192,"aov":1163.9279588336192},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"14/05/2026","st":"11:21","et":"12:31","tmin":70,"att":1,"m0":1.0,"m15":10.0,"m615":0.0,"m1630":0.0,"m30p":1.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1163.9279588336192,"aov":1163.9279588336192},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"14/05/2026","st":"12:07","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"14/05/2026","st":"10:27","et":"","tmin":0,"att":1,"m0":0.0,"m15":4.0,"m615":6.0,"m1630":1.0,"m30p":0.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"14/05/2026","st":"11:30","et":"11:30","tmin":0,"att":1,"m0":1.0,"m15":7.0,"m615":1.0,"m1630":1.0,"m30p":0.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":5.0,"pach":1.7,"clp":8764.236706689535,"aov":1752.847341337907},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"14/05/2026","st":"12:59","et":"","tmin":0,"att":1,"m0":0.0,"m15":8.0,"m615":1.0,"m1630":1.0,"m30p":1.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":2.0,"pach":66.7,"clp":7967.264150943395,"aov":3983.6320754716976},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"15/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":3.0,"m615":2.0,"m1630":2.0,"m30p":4.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"15/05/2026","st":"","et":"23:19","tmin":0,"att":1,"m0":0.0,"m15":3.0,"m615":5.0,"m1630":3.0,"m30p":0.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1163.9279588336192,"aov":1163.9279588336192},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"15/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":9.0,"m615":0.0,"m1630":0.0,"m30p":2.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1163.9279588336192,"aov":1163.9279588336192},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"15/05/2026","st":"","et":"13:46","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"15/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":4.0,"m615":2.0,"m1630":2.0,"m30p":2.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":1.0,"pach":33.3,"clp":921.5951972555745,"aov":921.5951972555745},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"15/05/2026","st":"","et":"22:17","tmin":0,"att":1,"m0":0.0,"m15":15.0,"m615":2.0,"m1630":0.0,"m30p":1.0,"vp":12.0,"va":18.0,"vach":1.5,"pp":3.0,"pv":6.0,"pach":2.0,"clp":33954.691252144075,"aov":5659.1152086906795},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"15/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":5.0,"m615":2.0,"m1630":1.0,"m30p":3.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":5.0,"pach":1.7,"clp":17382.178387650085,"aov":3476.435677530017},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"16/05/2026","st":"","et":"20:37","tmin":0,"att":1,"m0":0.0,"m15":6.0,"m615":4.0,"m1630":0.0,"m30p":0.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"16/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":3.0,"m615":6.0,"m1630":1.0,"m30p":1.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1163.9279588336192,"aov":1163.9279588336192},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"16/05/2026","st":"","et":"","tmin":0,"att":1,"m0":1.0,"m15":6.0,"m615":1.0,"m1630":0.0,"m30p":2.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":1.0,"pach":33.3,"clp":2471.14922813036,"aov":2471.14922813036},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"16/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"16/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":3.0,"m615":5.0,"m1630":1.0,"m30p":0.0,"vp":12.0,"va":9.0,"vach":75.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":5131.23499142367,"aov":5131.23499142367},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"16/05/2026","st":"","et":"","tmin":0,"att":1,"m0":1.0,"m15":9.0,"m615":0.0,"m1630":0.0,"m30p":2.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"16/05/2026","st":"","et":"15:07","tmin":0,"att":1,"m0":0.0,"m15":7.0,"m615":1.0,"m1630":1.0,"m30p":2.0,"vp":12.0,"va":11.0,"vach":91.7,"pp":3.0,"pv":1.0,"pach":33.3,"clp":4508.747855917666,"aov":4508.747855917666},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"17/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"17/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"17/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"17/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"17/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"17/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"17/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"18/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":4.0,"m615":2.0,"m1630":0.0,"m30p":0.0,"vp":12.0,"va":6.0,"vach":50.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"18/05/2026","st":"","et":"22:49","tmin":0,"att":1,"m0":0.0,"m15":4.0,"m615":3.0,"m1630":3.0,"m30p":0.0,"vp":12.0,"va":10.0,"vach":83.3,"pp":3.0,"pv":1.0,"pach":33.3,"clp":1163.9279588336192,"aov":1163.9279588336192},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"18/05/2026","st":"","et":"","tmin":0,"att":1,"m0":2.0,"m15":5.0,"m615":0.0,"m1630":1.0,"m30p":1.0,"vp":12.0,"va":9.0,"vach":75.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"18/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"18/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":0.0,"m615":5.0,"m1630":1.0,"m30p":1.0,"vp":12.0,"va":7.0,"vach":58.3,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"18/05/2026","st":"","et":"21:35","tmin":0,"att":1,"m0":2.0,"m15":4.0,"m615":3.0,"m1630":3.0,"m30p":2.0,"vp":12.0,"va":14.0,"vach":1.2,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"18/05/2026","st":"","et":"","tmin":0,"att":1,"m0":0.0,"m15":7.0,"m615":0.0,"m1630":1.0,"m30p":4.0,"vp":12.0,"va":12.0,"vach":100.0,"pp":3.0,"pv":1.0,"pach":33.3,"clp":3706.72384219554,"aov":3706.72384219554},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"19/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"19/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"19/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"19/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"19/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"19/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"19/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"20/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"20/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"20/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"20/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"20/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"20/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"20/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"21/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"21/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"21/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"21/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"21/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"21/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"21/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"22/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"22/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"22/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"22/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"22/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"22/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"22/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"23/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"23/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"23/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"23/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"23/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"23/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"23/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"24/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"24/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"24/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"24/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"24/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"24/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"24/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"25/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"25/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"25/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"25/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"25/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"25/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"25/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"26/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"26/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"26/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"26/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"26/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"26/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"26/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"27/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"27/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"27/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"27/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"27/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"27/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"27/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"28/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"28/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"28/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"28/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"28/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"28/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"28/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"29/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"29/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"29/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"29/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"29/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"29/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"29/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"30/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"30/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"30/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"30/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"30/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"30/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"30/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1345","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","date":"31/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1232","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","date":"31/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1187","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","date":"31/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/1109","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","date":"31/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0805","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","date":"31/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0628","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","date":"31/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0},{"zone":"East","id":"EMP/0538","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","date":"31/05/2026","st":"","et":"","tmin":0,"att":0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"vp":12.0,"va":0.0,"vach":0.0,"pp":3.0,"pv":0,"pach":0,"clp":0,"aov":0}];
+const MTD=[{"zone":"East","rep":"randhir.kumar","name":"Ambarish Singh","desig":"BDE","id":"EMP/1187","att":9.0,"wd":15.0,"attPct":60.0,"m0":7.0,"m15":48.0,"m615":5.0,"m1630":4.0,"m30p":10.0,"l3mVisit":191.7,"vp":180.0,"va":74.0,"vachPct":41.1,"vpd":4.93,"pp":45.0,"l3mProd":28.0,"pv":7.0,"pachPct":15.6,"ppd":0.78,"l3mCLP":237402.0,"clpTarget":350000.0,"clpAch":7740.08,"aov":1105.73,"clpd":860.01},{"zone":"East","rep":"randhir.kumar","name":"Bimalesh Kumar sahani","desig":"BDE","id":"EMP/0805","att":14.0,"wd":15.0,"attPct":93.3,"m0":0.0,"m15":12.0,"m615":22.0,"m1630":8.0,"m30p":3.0,"l3mVisit":111.3,"vp":180.0,"va":45.0,"vachPct":25.0,"vpd":3.0,"pp":45.0,"l3mProd":31.3,"pv":7.0,"pachPct":15.6,"ppd":0.5,"l3mCLP":266338.0,"clpTarget":350000.0,"clpAch":45923.01,"aov":6560.43,"clpd":3280.22},{"zone":"East","rep":"randhir.kumar","name":"GAUTAM KUMAR","desig":"BDE","id":"EMP/1345","att":12.0,"wd":15.0,"attPct":80.0,"m0":0.0,"m15":25.0,"m615":15.0,"m1630":5.0,"m30p":9.0,"l3mVisit":102.7,"vp":180.0,"va":54.0,"vachPct":30.0,"vpd":3.6,"pp":45.0,"l3mProd":17.7,"pv":2.0,"pachPct":4.4,"ppd":0.17,"l3mCLP":229410.0,"clpTarget":300000.0,"clpAch":28046.84,"aov":14023.42,"clpd":2337.24},{"zone":"East","rep":"randhir.kumar","name":"Kiran Kumar Behera","desig":"BDE","id":"EMP/0628","att":10.0,"wd":15.0,"attPct":66.7,"m0":10.0,"m15":72.0,"m615":14.0,"m1630":10.0,"m30p":13.0,"l3mVisit":114.0,"vp":180.0,"va":119.0,"vachPct":66.1,"vpd":7.93,"pp":45.0,"l3mProd":46.7,"pv":14.0,"pachPct":31.1,"ppd":1.4,"l3mCLP":572757.0,"clpTarget":500000.0,"clpAch":49774.78,"aov":3555.34,"clpd":4977.48},{"zone":"East","rep":"randhir.kumar","name":"Lakhvinder Singh","desig":"BDE","id":"EMP/1109","att":15.0,"wd":15.0,"attPct":100.0,"m0":0,"m15":0,"m615":0,"m1630":0,"m30p":0,"l3mVisit":89.3,"vp":180.0,"va":0.0,"vachPct":0.0,"vpd":0.0,"pp":45.0,"l3mProd":15.0,"pv":0,"pachPct":0,"ppd":0,"l3mCLP":99007.0,"clpTarget":300000.0,"clpAch":0,"aov":0,"clpd":0},{"zone":"East","rep":"randhir.kumar","name":"Saurabh kumar","desig":"BDE","id":"EMP/1232","att":14.0,"wd":15.0,"attPct":93.3,"m0":0.0,"m15":20.0,"m615":60.0,"m1630":52.0,"m30p":14.0,"l3mVisit":173.0,"vp":180.0,"va":146.0,"vachPct":81.1,"vpd":9.73,"pp":45.0,"l3mProd":40.3,"pv":11.0,"pachPct":24.4,"ppd":0.79,"l3mCLP":121324.0,"clpTarget":350000.0,"clpAch":10339.85,"aov":939.99,"clpd":738.56},{"zone":"East","rep":"randhir.kumar","name":"SUDIPTA GHOSH","desig":"BDE","id":"EMP/0538","att":13.0,"wd":15.0,"attPct":86.7,"m0":0.0,"m15":85.0,"m615":15.0,"m1630":15.0,"m30p":30.0,"l3mVisit":228.3,"vp":180.0,"va":145.0,"vachPct":80.6,"vpd":9.67,"pp":45.0,"l3mProd":46.7,"pv":19.0,"pachPct":42.2,"ppd":1.46,"l3mCLP":261142.0,"clpTarget":350000.0,"clpAch":125099.12,"aov":6584.16,"clpd":9623.01}];
+
+const BCOLORS=["#4f46e5","#059669","#0284c7","#7c3aed","#d97706","#dc2626","#0d9488"];
+const bc=i=>BCOLORS[i%BCOLORS.length];
+const init=n=>n.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+const inrK=v=>v>=1e7?"₹"+(v/1e7).toFixed(1)+"Cr":v>=1e5?"₹"+(v/1e5).toFixed(1)+"L":v>=1e3?"₹"+(v/1e3).toFixed(1)+"K":"₹"+Math.round(v);
+const attCol=p=>p>=80?"var(--green)":p>=60?"var(--amber)":"var(--red)";
+const pctCol=p=>p>=80?"var(--green)":p>=50?"var(--blue)":p>=30?"var(--amber)":"var(--red)";
+const f1=n=>n.toFixed(1);
+const f0=n=>Math.round(n).toLocaleString();
+const pct=n=>n.toFixed(1)+"%";
+
+function parseD(s){if(!s)return null;const p=s.split("/");return p.length===3?new Date(+p[2],+p[1]-1,+p[0]):new Date(s+"T00:00:00");}
+function toISO(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+const allDates=[...new Set(DAILY.map(r=>r.date))].sort((a,b)=>parseD(a)-parseD(b));
+let fromD=parseD(allDates[allDates.length-1]),toD=parseD(allDates[allDates.length-1]);
+function syncI(){document.getElementById("dFrom").value=toISO(fromD);document.getElementById("dTo").value=toISO(toD);}
+function setQuick(t,btn){
+  document.querySelectorAll("#datePills .pill").forEach(p=>p.classList.remove("active"));btn.classList.add("active");
+  const last=parseD(allDates[allDates.length-1]);
+  if(t==="yesterday"){fromD=last;toD=last;}else if(t==="week"){toD=last;fromD=new Date(last);fromD.setDate(fromD.getDate()-6);}
+  else{fromD=parseD(allDates[0]);toD=last;}
+  syncI();applyFilters();
+}
+function customRange(){
+  document.querySelectorAll("#datePills .pill").forEach(p=>p.classList.remove("active"));
+  const f=document.getElementById("dFrom").value,t2=document.getElementById("dTo").value;
+  if(f)fromD=new Date(f+"T00:00:00");if(t2)toD=new Date(t2+"T00:00:00");applyFilters();
+}
+function getFiltered(){const bde=document.getElementById("bdeSel").value;return DAILY.filter(r=>{const d=parseD(r.date);return d&&d>=fromD&&d<=toD&&(!bde||r.name===bde);});}
+
+function kpi(lbl,val,sub,c,pb){const p=pb!=null?`<div class="kpi-pbar"><div class="kpi-pbar-fill" style="width:${Math.min(pb,100)}%;background:${c};"></div></div>`:"";return`<div class="kpi"><div class="kpi-bar" style="background:${c};"></div><div class="kpi-lbl">${lbl}</div><div class="kpi-val" style="color:${c};">${val}</div><div class="kpi-sub">${sub}</div>${p}</div>`;}
+
+function renderBuckets(data,targetId){
+  const BD=[{l:"0 Min",k:"m0",tag:"Invalid",tc:"tag-inv",c:"var(--red)"},{l:"1-5 Min",k:"m15",tag:"Weak",tc:"tag-weak",c:"var(--amber)"},{l:"6-15 Min",k:"m615",tag:"Valid",tc:"tag-valid",c:"var(--green)"},{l:"16-30 Min",k:"m1630",tag:"Valid",tc:"tag-valid",c:"var(--green)"},{l:"30+ Min",k:"m30p",tag:"Valid",tc:"tag-valid",c:"var(--teal)"}];
+  const bv=BD.map(b=>({...b,v:data.reduce((s,r)=>s+r[b.k],0)}));
+  const bs=bv.reduce((s,b)=>s+b.v,0)||1;
+  document.getElementById(targetId).innerHTML=bv.map(b=>`<div class="bucket-card"><div class="bc-top" style="background:${b.c};"></div><div class="bc-lbl">${b.l}</div><div class="bc-val" style="color:${b.c};">${f0(b.v)}</div><div class="bc-pct">${pct(b.v/bs*100)}</div><span class="bc-tag ${b.tc}">${b.tag}</span></div>`).join("");
+}
+
+let dSortKey="date",dSortDir=-1,dPage=1;const DPAGE=20;
+function dSort(k){if(dSortKey===k)dSortDir*=-1;else{dSortKey=k;dSortDir=-1;}dPage=1;renderDailyTable(getFiltered());}
+function dGoPage(p){const pages=Math.max(1,Math.ceil(getFiltered().length/DPAGE));if(p<1||p>pages)return;dPage=p;renderDailyTable(getFiltered());}
+
+function renderDaily(data){
+  const pres=data.filter(r=>r.att).length,tot=data.length;
+  const attPct=tot?pres/tot*100:0;
+  const bdeSet=[...new Set(data.map(r=>r.name))],dateSet=[...new Set(data.map(r=>r.date))];
+  const tmin=data.reduce((s,r)=>s+r.tmin,0);
+  document.getElementById("tbChips").innerHTML=`<span class="tbc">BDEs: <strong>${bdeSet.length}</strong></span><span class="tbc">Records: <strong>${tot}</strong></span><span class="tbc">Present: <strong style="color:var(--green);">${pres}</strong></span><span class="tbc">Zone: <strong>East</strong></span>`;
+  document.getElementById("dailyCount").textContent=`${tot} records`;
+  document.getElementById("kpi-att").innerHTML=
+    kpi("Total BDEs",bdeSet.length,"In selected range","var(--accent)",null)+
+    kpi("Date Range",dateSet.length,"Days covered","var(--blue)",null)+
+    kpi("Present",pres,`of ${tot} records`,attCol(attPct),attPct)+
+    kpi("Absent",tot-pres,`${pct(100-attPct)} absent rate`,tot-pres>0?"var(--red)":"var(--green)",null)+
+    kpi("Attendance %",pct(attPct),"Present / Total",attCol(attPct),attPct)+
+    kpi("Field Time",`${Math.floor(tmin/60)}h${tmin%60}m`,"Sum of time spent","var(--teal)",null);
+  renderBuckets(data,"bucket-row");
+  const vp=data.reduce((s,r)=>s+r.vp,0),va=data.reduce((s,r)=>s+r.va,0);
+  const vachP=vp?va/vp*100:0,presR=data.filter(r=>r.att);
+  const vpd=presR.length?va/presR.length:0;
+  document.getElementById("kpi-visit").innerHTML=
+    kpi("Visit Planned",f0(vp),"Total planned","var(--blue)",null)+
+    kpi("Visit Achieved",f0(va),"Total achieved","var(--accent)",vachP)+
+    kpi("Visit Ach%",pct(vachP),"vs Planned",pctCol(vachP),vachP)+
+    kpi("Visit / Day",f1(vpd),"Avg on present days","var(--teal)",null);
+  const pp=data.reduce((s,r)=>s+r.pp,0),pv=data.reduce((s,r)=>s+r.pv,0);
+  const pachP=pp?pv/pp*100:0,ppd=presR.length?pv/presR.length:0;
+  const clp=data.reduce((s,r)=>s+r.clp,0),aov=pv>0?clp/pv:0;
+  document.getElementById("kpi-prod").innerHTML=
+    kpi("Prod Planned",f0(pp),"Total planned","var(--blue)",null)+
+    kpi("Prod Visit",f0(pv),"Total achieved","var(--green)",pachP)+
+    kpi("Prod%",pct(pachP),"vs Planned",pctCol(pachP),pachP)+
+    kpi("Prod / Day",f1(ppd),"Avg on present days","var(--teal)",null)+
+    kpi("Total CLP",inrK(clp),"Order value","var(--accent)",null)+
+    kpi("AOV",inrK(aov),"CLP ÷ Prod Visit","var(--amber)",null);
+
+  // BDE summary cards
+  const bdeMap={};
+  data.forEach(r=>{if(!bdeMap[r.name])bdeMap[r.name]={...r,att:0,m0:0,m15:0,m615:0,m1630:0,m30p:0,vp:0,va:0,pp:0,pv:0,clp:0,tmin:0};const b=bdeMap[r.name];b.att+=r.att;b.m0+=r.m0;b.m15+=r.m15;b.m615+=r.m615;b.m1630+=r.m1630;b.m30p+=r.m30p;b.vp+=r.vp;b.va+=r.va;b.pp+=r.pp;b.pv+=r.pv;b.clp+=r.clp;b.tmin+=r.tmin;});
+  const bdeArr=Object.values(bdeMap).sort((a,x)=>x.clp-a.clp);
+  const maxCLP=Math.max(...bdeArr.map(b=>b.clp),1);
+  document.getElementById("bde-rows").innerHTML=bdeArr.map((b,i)=>{
+    const c=bc(i),vachP2=b.vp?b.va/b.vp*100:0,pachP2=b.pp?b.pv/b.pp*100:0,aov2=b.pv>0?b.clp/b.pv:0;
+    return`<div class="bde-row" style="border-left-color:${c};">
+      <div class="bde-row-top">
+        <div class="bde-av" style="background:${c}18;color:${c};">${init(b.name)}</div>
+        <div style="flex:1;"><div class="bde-name">${b.name}</div><div class="bde-id">${b.id} · ${b.desig}</div></div>
+        <span class="att-chip ${b.att>0?"att-p":"att-a"}">${b.att>0?b.att+" present":"Absent"}</span>
+      </div>
+      <div class="bde-meta">
+        <span>Visit <strong>${b.va}/${b.vp}</strong></span>
+        <span>V.Ach <strong style="color:${pctCol(vachP2)};">${pct(vachP2)}</strong></span>
+        <span>Prod <strong>${b.pv}/${b.pp}</strong></span>
+        <span>P.Ach <strong style="color:${pctCol(pachP2)};">${pct(pachP2)}</strong></span>
+        <span>CLP <strong style="color:var(--accent);">${inrK(b.clp)}</strong></span>
+        <span>AOV <strong style="color:var(--amber);">${inrK(aov2)}</strong></span>
+        <span>Field <strong>${Math.floor(b.tmin/60)}h${b.tmin%60}m</strong></span>
+      </div>
+      <div class="bde-kpis">
+        <div class="bk"><div class="bk-l">0 Min</div><div class="bk-v" style="color:var(--red);">${b.m0}</div></div>
+        <div class="bk"><div class="bk-l">1-5 Min</div><div class="bk-v" style="color:var(--amber);">${b.m15}</div></div>
+        <div class="bk"><div class="bk-l">6-15 Min</div><div class="bk-v" style="color:var(--green);">${b.m615}</div></div>
+        <div class="bk"><div class="bk-l">16-30 Min</div><div class="bk-v" style="color:var(--green);">${b.m1630}</div></div>
+        <div class="bk"><div class="bk-l">30+ Min</div><div class="bk-v" style="color:var(--teal);">${b.m30p}</div></div>
+        <div class="bk"><div class="bk-l">CLP Share</div><div class="bk-v" style="color:${c};">${pct(b.clp/maxCLP*100)}</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.5rem;color:var(--muted);margin-bottom:.1rem;"><span>CLP vs zone top</span><span style="font-weight:700;color:${c};">${inrK(b.clp)}</span></div>
+      <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${Math.round(b.clp/maxCLP*100)}%;background:${c};border-radius:2px;transition:width .4s;"></div></div>
+    </div>`;
+  }).join("");
+  renderDailyTable(data);
+}
+
+function renderDailyTable(data){
+  let td=[...data];
+  const sm={name:(a,b)=>a.name.localeCompare(b.name)*dSortDir,date:(a,b)=>(parseD(a.date)-parseD(b.date))*dSortDir,att:(a,b)=>(b.att-a.att)*dSortDir,vp:(a,b)=>(b.vp-a.vp)*dSortDir,va:(a,b)=>(b.va-a.va)*dSortDir,vach:(a,b)=>(b.vach-a.vach)*dSortDir,pp:(a,b)=>(b.pp-a.pp)*dSortDir,pv:(a,b)=>(b.pv-a.pv)*dSortDir,pach:(a,b)=>(b.pach-a.pach)*dSortDir,clp:(a,b)=>(b.clp-a.clp)*dSortDir,aov:(a,b)=>(b.aov-a.aov)*dSortDir};
+  if(sm[dSortKey])td.sort(sm[dSortKey]);
+  const total=td.length,pages=Math.max(1,Math.ceil(total/DPAGE));
+  if(dPage>pages)dPage=pages;
+  const start=(dPage-1)*DPAGE,slice=td.slice(start,start+DPAGE);
+  document.getElementById("dailyTblCount").textContent=`${total} records`;
+  document.getElementById("daily-tbody").innerHTML=slice.map(r=>`<tr>
+    <td><div style="font-weight:600;font-size:.7rem;">${r.name}</div></td>
+    <td class="mono" style="color:var(--muted2);">${r.id}</td>
+    <td class="mono">${r.date}</td>
+    <td class="mono">${r.st||"—"}</td><td class="mono">${r.et||"—"}</td>
+    <td class="mono">${r.tmin?Math.floor(r.tmin/60)+"h"+r.tmin%60+"m":"—"}</td>
+    <td><span class="att-chip ${r.att?"att-p":"att-a"}">${r.att?"Present":"Absent"}</span></td>
+    <td class="mono" style="color:var(--red);">${r.m0||"—"}</td>
+    <td class="mono" style="color:var(--amber);">${r.m15||"—"}</td>
+    <td class="mono" style="color:var(--green);">${r.m615||"—"}</td>
+    <td class="mono" style="color:var(--green);">${r.m1630||"—"}</td>
+    <td class="mono" style="color:var(--teal);">${r.m30p||"—"}</td>
+    <td class="mono">${r.vp}</td><td class="mono">${r.va}</td>
+    <td><div class="pbar-w"><div class="pbar-bg" style="width:38px;"><div class="pbar-fg" style="width:${Math.min(r.vach,100)}%;background:${pctCol(r.vach)};"></div></div><span class="mono" style="color:${pctCol(r.vach)};">${r.vach}%</span></div></td>
+    <td class="mono">${r.pp}</td><td class="mono">${r.pv||"—"}</td>
+    <td><div class="pbar-w"><div class="pbar-bg" style="width:38px;"><div class="pbar-fg" style="width:${Math.min(r.pach,100)}%;background:${pctCol(r.pach)};"></div></div><span class="mono" style="color:${pctCol(r.pach)};">${r.pach?r.pach+"%":"—"}</span></div></td>
+    <td><div class="pbar-w"><div class="pbar-bg" style="width:38px;"><div class="pbar-fg" style="width:${Math.round(r.clp/Math.max(...DAILY.map(x=>x.clp),1)*100)}%;background:var(--accent);"></div></div><span class="mono" style="color:var(--accent);">${r.clp>0?inrK(r.clp):"—"}</span></div></td>
+    <td class="mono" style="color:var(--amber);">${r.aov>0?inrK(r.aov):"—"}</td>
+  </tr>`).join("");
+  document.getElementById("dPagInfo").textContent=`Showing ${start+1}–${Math.min(start+DPAGE,total)} of ${total}`;
+  let pg=[];if(pages<=7){for(let i=1;i<=pages;i++)pg.push(i);}else{pg=[1];if(dPage>3)pg.push("...");for(let i=Math.max(2,dPage-1);i<=Math.min(pages-1,dPage+1);i++)pg.push(i);if(dPage<pages-2)pg.push("...");pg.push(pages);}
+  const btns=[];btns.push(`<button class="pb" onclick="dGoPage(${dPage-1})" ${dPage===1?"disabled":""}>←</button>`);
+  pg.forEach(p=>{btns.push(p==="..."?`<span style="color:var(--muted);padding:0 .15rem;">…</span>`:`<button class="pb ${p===dPage?"active":""}" onclick="dGoPage(${p})">${p}</button>`);});
+  btns.push(`<button class="pb" onclick="dGoPage(${dPage+1})" ${dPage===pages?"disabled":""}>→</button>`);
+  document.getElementById("dPagBtns").innerHTML=btns.join("");
+}
+
+let scView="all";const charts={};
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+const TICK={color:"#64748b",font:{size:9,family:"Plus Jakarta Sans"}};
+const GRID="rgba(226,232,240,.7)";
+const TT={backgroundColor:"#fff",titleColor:"#0f172a",bodyColor:"#64748b",borderColor:"#e2e8f0",borderWidth:1,cornerRadius:6,padding:8};
+
+function getMTDF(){const bde=document.getElementById("bdeSelMTD").value;return bde?MTD.filter(r=>r.name===bde):MTD;}
+
+function renderMTD(){
+  const data=getMTDF();
+  document.getElementById("mtdCount").textContent=`${data.length} BDEs`;
+  const tAtt=data.reduce((s,r)=>s+r.att,0),tWD=data.reduce((s,r)=>s+r.wd,0);
+  const avgAttP=data.length?data.reduce((s,r)=>s+r.attPct,0)/data.length:0;
+  document.getElementById("mtd-kpi-att").innerHTML=
+    kpi("BDE Count",data.length,"MTD headcount","var(--accent)",null)+
+    kpi("Total Present Days",tAtt,"Days attended","var(--green)",null)+
+    kpi("Total Working Days",tWD,"Available days","var(--blue)",null)+
+    kpi("Avg Attendance%",pct(avgAttP),"Across BDEs",attCol(avgAttP),avgAttP);
+  renderBuckets(data,"mtd-bucket-row");
+  const tvp=data.reduce((s,r)=>s+r.vp,0),tva=data.reduce((s,r)=>s+r.va,0);
+  const vachP=tvp?tva/tvp*100:0,avgVpd=data.length?data.reduce((s,r)=>s+r.vpd,0)/data.length:0;
+  const avgL3mV=data.length?data.reduce((s,r)=>s+r.l3mVisit,0)/data.length:0;
+  document.getElementById("mtd-kpi-visit").innerHTML=
+    kpi("Visit Planned",f0(tvp),"MTD planned","var(--blue)",null)+
+    kpi("Visit Achieved",f0(tva),"MTD achieved","var(--accent)",vachP)+
+    kpi("Visit Ach%",pct(vachP),"vs Planned",pctCol(vachP),vachP)+
+    kpi("Avg Visit/Day",f1(avgVpd),"Per BDE avg","var(--teal)",null)+
+    kpi("L3M Avg Visit",f1(avgL3mV),"Benchmark","var(--muted2)",null);
+  const tpp=data.reduce((s,r)=>s+r.pp,0),tpv=data.reduce((s,r)=>s+r.pv,0);
+  const pachP=tpp?tpv/tpp*100:0,avgPpd=data.length?data.reduce((s,r)=>s+r.ppd,0)/data.length:0;
+  const avgL3mP=data.length?data.reduce((s,r)=>s+r.l3mProd,0)/data.length:0;
+  document.getElementById("mtd-kpi-prod").innerHTML=
+    kpi("Prod Planned",f0(tpp),"MTD planned","var(--blue)",null)+
+    kpi("Prod Visit",f0(tpv),"MTD achieved","var(--green)",pachP)+
+    kpi("Prod Ach%",pct(pachP),"vs Planned",pctCol(pachP),pachP)+
+    kpi("Avg Prod/Day",f1(avgPpd),"Per BDE avg","var(--teal)",null)+
+    kpi("L3M Avg Prod",f1(avgL3mP),"Benchmark","var(--muted2)",null);
+  const tTgt=data.reduce((s,r)=>s+r.clpTarget,0),tAch=data.reduce((s,r)=>s+r.clpAch,0);
+  const clpP=tTgt?tAch/tTgt*100:0,aov=tpv>0?tAch/tpv:0;
+  const avgClpd=data.length?data.reduce((s,r)=>s+r.clpd,0)/data.length:0;
+  const avgL3mC=data.length?data.reduce((s,r)=>s+r.l3mCLP,0)/data.length:0;
+  document.getElementById("mtd-kpi-clp").innerHTML=
+    kpi("CLP Target",inrK(tTgt),"MTD target","var(--blue)",null)+
+    kpi("CLP Achieved",inrK(tAch),"MTD achieved","var(--green)",clpP)+
+    kpi("CLP Ach%",pct(clpP),"vs Target",pctCol(clpP),clpP)+
+    kpi("AOV",inrK(aov),"Achieved ÷ Prod Visit","var(--amber)",null)+
+    kpi("Avg CLP/Day",inrK(avgClpd),"Per BDE avg","var(--teal)",null)+
+    kpi("L3M Avg CLP",inrK(avgL3mC),"Benchmark","var(--muted2)",null);
+  document.getElementById("l3m-grid").innerHTML=[
+    {l:"L3M Avg Visit",v:f1(avgL3mV),c:"var(--accent)",cv:f1(tva/(data.length||1)),cl:"MTD Avg Visit"},
+    {l:"L3M Avg Prod",v:f1(avgL3mP),c:"var(--green)",cv:f1(tpv/(data.length||1)),cl:"MTD Avg Prod"},
+    {l:"L3M Avg CLP",v:inrK(avgL3mC),c:"var(--amber)",cv:inrK(tAch/(data.length||1)),cl:"MTD Avg CLP"},
+  ].map(l=>`<div class="l3m-card"><div class="l3m-top" style="background:${l.c};"></div><div class="l3m-lbl">${l.l}</div><div class="l3m-val" style="color:${l.c};">${l.v}</div><div class="l3m-sub">3-month rolling avg per BDE</div><div class="l3m-compare"><span class="l3m-c-lbl">${l.cl}</span><span class="l3m-c-val" style="color:${l.c};">${l.cv}</span></div></div>`).join("");
+
+  const names=data.map(r=>r.name.split(" ")[0]);
+  ["ch-visit","ch-prod","ch-clp","ch-att","ch-timing"].forEach(dc);
+  const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#64748b",font:{size:9,family:"Plus Jakarta Sans"}}},tooltip:TT},scales:{x:{ticks:{...TICK,maxRotation:30},grid:{display:false}},y:{ticks:TICK,grid:{color:GRID}}}};
+  charts["ch-visit"]=new Chart(document.getElementById("ch-visit"),{type:"bar",data:{labels:names,datasets:[{label:"Planned",data:data.map(r=>r.vp),backgroundColor:"rgba(2,132,199,.35)",borderColor:"rgba(2,132,199,.7)",borderWidth:1,borderRadius:3},{label:"Achieved",data:data.map(r=>r.va),backgroundColor:"rgba(79,70,229,.65)",borderColor:"rgba(79,70,229,.9)",borderWidth:1,borderRadius:3}]},options:base});
+  charts["ch-prod"]=new Chart(document.getElementById("ch-prod"),{type:"bar",data:{labels:names,datasets:[{label:"Planned",data:data.map(r=>r.pp),backgroundColor:"rgba(2,132,199,.35)",borderColor:"rgba(2,132,199,.7)",borderWidth:1,borderRadius:3},{label:"Achieved",data:data.map(r=>r.pv),backgroundColor:"rgba(5,150,105,.65)",borderColor:"rgba(5,150,105,.9)",borderWidth:1,borderRadius:3}]},options:base});
+  charts["ch-clp"]=new Chart(document.getElementById("ch-clp"),{type:"bar",data:{labels:names,datasets:[{label:"Target",data:data.map(r=>r.clpTarget),backgroundColor:"rgba(2,132,199,.3)",borderColor:"rgba(2,132,199,.6)",borderWidth:1,borderRadius:3},{label:"Achieved",data:data.map(r=>r.clpAch),backgroundColor:"rgba(5,150,105,.65)",borderColor:"rgba(5,150,105,.9)",borderWidth:1,borderRadius:3}]},options:{...base,plugins:{...base.plugins,tooltip:{...TT,callbacks:{label:c=>`${c.dataset.label}: ${inrK(c.raw)}`}}},scales:{...base.scales,y:{ticks:{...TICK,callback:v=>inrK(v)},grid:{color:GRID}}}}});
+  charts["ch-att"]=new Chart(document.getElementById("ch-att"),{type:"bar",data:{labels:names,datasets:[{label:"Attendance%",data:data.map(r=>r.attPct),backgroundColor:data.map(r=>r.attPct>=80?"rgba(5,150,105,.7)":r.attPct>=60?"rgba(217,119,6,.7)":"rgba(220,38,38,.7)"),borderRadius:4}]},options:{...base,plugins:{...base.plugins,legend:{display:false}},scales:{...base.scales,y:{...base.scales.y,max:100}}}});
+  charts["ch-timing"]=new Chart(document.getElementById("ch-timing"),{type:"bar",data:{labels:data.map(r=>r.name.split(" ")[0]),datasets:[{label:"0 Min (Invalid)",data:data.map(r=>r.m0),backgroundColor:"rgba(220,38,38,.7)"},{label:"1-5 Min (Weak)",data:data.map(r=>r.m15),backgroundColor:"rgba(217,119,6,.7)"},{label:"6-15 Min",data:data.map(r=>r.m615),backgroundColor:"rgba(2,132,199,.6)"},{label:"16-30 Min",data:data.map(r=>r.m1630),backgroundColor:"rgba(79,70,229,.65)"},{label:"30+ Min",data:data.map(r=>r.m30p),backgroundColor:"rgba(5,150,105,.7)"}]},options:{...base,indexAxis:"y",scales:{x:{...base.scales.x,stacked:true},y:{...base.scales.y,stacked:true}},plugins:{...base.plugins,legend:{position:"bottom",labels:{color:"#64748b",font:{size:9,family:"Plus Jakarta Sans"},boxWidth:10,padding:8}}}}});
+
+  const sorted=[...data].sort((a,b)=>b.clpAch-a.clpAch),maxC=sorted[0]?.clpAch||1;
+  const rkC=i=>["#d97706","#64748b","#9a7c4f"][i]||"var(--muted)";
+  document.getElementById("lb-top").innerHTML=sorted.map((r,i)=>`<div class="rank-item"><span class="rank-no" style="color:${rkC(i)};font-weight:700;">${i+1}</span><span class="rank-name">${r.name}</span><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${Math.round(r.clpAch/maxC*100)}%;background:var(--accent);"></div></div><span class="rank-val" style="color:var(--accent);">${inrK(r.clpAch)}</span><span class="rank-tag">${pct(r.clpTarget?r.clpAch/r.clpTarget*100:0)}</span></div>`).join("");
+  document.getElementById("lb-bot").innerHTML=[...sorted].reverse().map((r,i)=>`<div class="rank-item"><span class="rank-no">${sorted.length-i}</span><span class="rank-name">${r.name}</span><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${Math.round(r.clpAch/maxC*100)}%;background:var(--red);"></div></div><span class="rank-val" style="color:var(--red);">${inrK(r.clpAch)}</span><span class="rank-tag">${pct(r.clpTarget?r.clpAch/r.clpTarget*100:0)}</span></div>`).join("");
+
+  const clps=[...data].sort((a,b)=>b.clpAch-a.clpAch).map(r=>r.clpAch),n=clps.length;
+  const p75=clps[Math.floor(n*0.25)]||0,p25=clps[Math.floor(n*0.75)]||0;
+  let cards=[...data];
+  const sq=(document.getElementById("scSearch")||{}).value?.toLowerCase().trim()||"";
+  if(scView==="top5")cards=[...data].sort((a,b)=>b.clpAch-a.clpAch).slice(0,5);
+  else if(scView==="bot5")cards=[...data].sort((a,b)=>a.clpAch-b.clpAch).slice(0,5);
+  else if(scView==="highAtt")cards=[...data].sort((a,b)=>b.attPct-a.attPct).slice(0,5);
+  else if(scView==="lowAtt")cards=[...data].sort((a,b)=>a.attPct-b.attPct).slice(0,5);
+  else if(scView==="top")cards=data.filter(r=>r.clpAch>=p75);
+  else if(scView==="mid")cards=data.filter(r=>r.clpAch>=p25&&r.clpAch<p75);
+  else if(scView==="low")cards=data.filter(r=>r.clpAch<p25);
+  if(sq)cards=cards.filter(r=>r.name.toLowerCase().includes(sq)||r.id.toLowerCase().includes(sq));
+  document.getElementById("scInfo").textContent=`${cards.length} BDEs`;
+  document.getElementById("sc-grid").innerHTML=cards.map((r,i)=>{
+    const c=bc(i),clpP=r.clpTarget?r.clpAch/r.clpTarget*100:0;
+    const vachP2=r.vp?r.va/r.vp*100:0,pachP2=r.pp?r.pv/r.pp*100:0;
+    const perf=r.clpAch>=p75?"top":r.clpAch>=p25?"mid":"low";
+    return`<div class="sc-card">
+      <div class="sc-top">
+        <div class="sc-av" style="background:${c}18;color:${c};">${init(r.name)}</div>
+        <div class="sc-info">
+          <div class="sc-name">${r.name}</div>
+          <div class="sc-meta">East · ${r.rep}</div>
+          <div class="sc-empid">${r.id} · <span class="perf-chip perf-${perf}">${perf==="top"?"🏆 Top":perf==="mid"?"📈 Mid":"🚨 Low"}</span></div>
+        </div>
+      </div>
+      <div class="sc-kpis">
+        <div class="sc-k"><div class="sc-kl">Attend%</div><div class="sc-kv" style="color:${attCol(r.attPct)};">${pct(r.attPct)}</div></div>
+        <div class="sc-k"><div class="sc-kl">Days</div><div class="sc-kv">${r.att}/${r.wd}</div></div>
+        <div class="sc-k"><div class="sc-kl">Visit Ach%</div><div class="sc-kv" style="color:${pctCol(vachP2)};">${pct(vachP2)}</div></div>
+        <div class="sc-k"><div class="sc-kl">V/Day</div><div class="sc-kv">${f1(r.vpd)}</div></div>
+        <div class="sc-k"><div class="sc-kl">Prod%</div><div class="sc-kv" style="color:${pctCol(pachP2)};">${pct(pachP2)}</div></div>
+        <div class="sc-k"><div class="sc-kl">P/Day</div><div class="sc-kv">${f1(r.ppd)}</div></div>
+        <div class="sc-k"><div class="sc-kl">CLP</div><div class="sc-kv" style="color:var(--accent);font-size:.68rem;">${inrK(r.clpAch)}</div></div>
+        <div class="sc-k"><div class="sc-kl">AOV</div><div class="sc-kv" style="color:var(--amber);font-size:.68rem;">${inrK(r.aov)}</div></div>
+      </div>
+      <div class="sc-bars">
+        <div><div class="sc-brl"><span>Attendance%</span><span style="color:${attCol(r.attPct)};font-weight:700;">${pct(r.attPct)}</span></div><div class="sc-bg"><div class="sc-bf" style="width:${Math.min(r.attPct,100)}%;background:${attCol(r.attPct)};"></div></div></div>
+        <div><div class="sc-brl"><span>Visit Ach%</span><span style="color:${pctCol(vachP2)};font-weight:700;">${pct(vachP2)}</span></div><div class="sc-bg"><div class="sc-bf" style="width:${Math.min(vachP2,100)}%;background:${pctCol(vachP2)};"></div></div></div>
+        <div><div class="sc-brl"><span>Prod%</span><span style="color:${pctCol(pachP2)};font-weight:700;">${pct(pachP2)}</span></div><div class="sc-bg"><div class="sc-bf" style="width:${Math.min(pachP2,100)}%;background:${pctCol(pachP2)};"></div></div></div>
+        <div><div class="sc-brl"><span>CLP Ach% vs Target</span><span style="color:${pctCol(clpP)};font-weight:700;">${pct(clpP)}</span></div><div class="sc-bg"><div class="sc-bf" style="width:${Math.min(clpP,100)}%;background:${pctCol(clpP)};"></div></div></div>
+      </div>
+      <div style="margin-top:.5rem;padding-top:.4rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:.52rem;color:var(--muted);">
+        <span>L3M Visit: <strong style="color:var(--text);">${f1(r.l3mVisit)}</strong></span>
+        <span>L3M Prod: <strong style="color:var(--text);">${f1(r.l3mProd)}</strong></span>
+        <span>L3M CLP: <strong style="color:var(--accent);">${inrK(r.l3mCLP)}</strong></span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function setSC(v,btn){scView=v;document.querySelectorAll("#scPills .pill").forEach(p=>p.classList.remove("active"));btn.classList.add("active");renderMTD();}
+
+function switchTab(tab){
+  document.querySelectorAll(".page").forEach(p=>{p.classList.remove("active");p.style.display="none";});
+  document.querySelectorAll(".tabnav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("fbar-daily").style.display=tab==="daily"?"flex":"none";
+  document.getElementById("fbar-mtd").style.display=tab==="mtd"?"flex":"none";
+  const pg=document.getElementById("pg-"+tab);pg.classList.add("active");pg.style.display="flex";
+  document.getElementById("tab-"+tab).classList.add("active");
+  if(tab==="mtd")renderMTD();
+}
+
+function applyFilters(){renderDaily(getFiltered());}
+
+// INIT
+const bdeSel=document.getElementById("bdeSel"),bdeSel2=document.getElementById("bdeSelMTD");
+[...new Set(DAILY.map(r=>r.name))].sort().forEach(n=>{[bdeSel,bdeSel2].forEach(s=>{const o=document.createElement("option");o.value=n;o.textContent=n;s.appendChild(o);});});
+setQuick("yesterday",document.querySelector("#datePills .pill"));
+</script>
+</body>
+</html>
